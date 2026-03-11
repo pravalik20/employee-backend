@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: white;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .box {
+      background: #1e293b;
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 26px;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+
+    .box h2 {
+      margin: 0 0 12px;
+      text-align: center;
+      font-size: 26px;
+    }
+
+    .box p {
+      text-align: center;
+      color: #cbd5f5;
+      font-size: 16px;
+      margin-bottom: 28px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 22px;
+    }
+
+    input {
+      width: 100%;
+      padding: 18px 50px 18px 18px;
+      border-radius: 12px;
+      border: none;
+      font-size: 18px;
+      outline: none;
+    }
+
+    .eye {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      user-select: none;
+      opacity: 0.7;
+    }
+
+    .eye:hover {
+      opacity: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 18px;
+      border-radius: 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+
+    .error {
+      text-align: center;
+      color: #ff6b6b;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .box { padding: 28px 22px; }
+      .box h2 { font-size: 24px; }
+      input { font-size: 17px; padding: 16px 50px 16px 16px; }
+      button { font-size: 18px; padding: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page">
+  <div class="box">
+    <h2>Admin Login</h2>
+    <p>Enter admin key to manage employees</p>
+
+    <div class="error" id="error"></div>
+
+    <div class="input-group">
+      <input
+        type="password"
+        id="key"
+        placeholder="Admin Key"
+        onkeydown="if(event.key==='Enter') login()"
+      />
+      <span class="eye" onclick="togglePassword()">👁</span>
+    </div>
+
+    <button id="loginBtn" onclick="login()">Login</button>
+  </div>
+</div>
+
+<script>
+function togglePassword() {
+  const input = document.getElementById("key");
+  input.type = input.type === "password" ? "text" : "password";
+}
+
+async function login() {
+  const key = document.getElementById("key").value.trim();
+  const errorDiv = document.getElementById("error");
+  const btn = document.getElementById("loginBtn");
+
+  errorDiv.textContent = "";
+
+  if (!key) {
+    errorDiv.textContent = "Please enter admin key";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Checking...";
+
+  try {
+    const res = await fetch("/admin/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ key })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorDiv.textContent = data.message || "Invalid admin key";
+      btn.disabled = false;
+      btn.textContent = "Login";
+      return;
+    }
+
+    // Save key for admin actions
+    sessionStorage.setItem("adminKey", key);
+
+    window.location.href = "/admin-employees.html";
+
+  } catch (err) {
+    errorDiv.textContent = "Server error. Please try again.";
+    btn.disabled = false;
+    btn.textContent = "Login";
+  }
+}
+</script>
+
+</body>
+</html>

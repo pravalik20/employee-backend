@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sahara Employees</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f6fb;
+    }
+
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h2 { margin: 0; }
+
+    .header-right {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      position: relative;
+    }
+
+    .admin-link {
+      border: 1px solid white;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    .cart-badge {
+      background: red;
+      color: white;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 50%;
+      position: absolute;
+      top: -8px;
+      right: -12px;
+    }
+
+    .search-box {
+      max-width: 420px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .container { padding: 0 30px 40px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .card img {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .card h3 {
+      margin: 14px 0 6px;
+    }
+
+    .department {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .card button {
+      width: 100%;
+      padding: 14px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .card button:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>Sahara Employees</h2>
+  <div class="header-right">
+    <a href="/cart.html">
+      🛒 List <span class="cart-badge" id="cartCount">0</span>
+    </a>
+    <a href="/admin-login.html" class="admin-link">Admin Login</a>
+  </div>
+</header>
+
+<div class="search-box">
+  <input
+    type="text"
+    placeholder="Search by name or department..."
+    onkeyup="filterEmployees(this.value)"
+  />
+</div>
+
+<div class="container">
+  <div class="grid" id="employees"></div>
+</div>
+
+<script>
+let allEmployees = [];
+
+/* LOAD EMPLOYEES */
+async function loadEmployees() {
+  const res = await fetch("/employees");
+  const data = await res.json();
+
+  // SORT A → Z BY NAME
+  data.sort((a, b) => a.name.localeCompare(b.name));
+
+  allEmployees = data;
+  render(allEmployees);
+  loadCartCount();
+}
+
+/* RENDER */
+function render(list) {
+  const container = document.getElementById("employees");
+  container.innerHTML = "";
+
+  list.forEach(emp => {
+    container.innerHTML += `
+      <div class="card">
+        <img src="${emp.photo}">
+        <h3>${emp.name}</h3>
+        <div class="department">
+          Department: ${emp.department || "Not Assigned"}
+        </div>
+        <button onclick="addToCart('${emp._id}')">
+          Add to list
+        </button>
+      </div>
+    `;
+  });
+}
+
+/* SEARCH (Name + Department) */
+function filterEmployees(text) {
+  const filtered = allEmployees.filter(e =>
+    e.name.toLowerCase().includes(text.toLowerCase()) ||
+    (e.department && e.department.toLowerCase().includes(text.toLowerCase()))
+  );
+
+  // KEEP SEARCH RESULTS SORTED
+  filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  render(filtered);
+}
+
+/* ADD TO CART */
+async function addToCart(employeeId) {
+  await fetch(`/cart/${employeeId}`, {
+    method: "POST"
+  });
+
+  loadCartCount();
+  alert("Added to list");
+}
+
+/* CART COUNT */
+async function loadCartCount() {
+  const res = await fetch("/cart");
+  const items = await res.json();
+  document.getElementById("cartCount").innerText = items.length;
+}
+
+/* INIT */
+loadEmployees();
+</script>
+
+</body>
+</html>
