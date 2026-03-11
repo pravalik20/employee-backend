@@ -24,7 +24,7 @@ app.use((req, res, next) => {
    MONGODB CONNECTION
 ========================= */
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => {
     console.error("MongoDB Error:", err);
@@ -43,15 +43,14 @@ const employeeSchema = new mongoose.Schema({
 
 const Employee = mongoose.model("Employee", employeeSchema);
 
-const Cart = mongoose.model(
-  "Cart",
-  new mongoose.Schema({
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Employee"
-    }
-  })
-);
+const cartSchema = new mongoose.Schema({
+  employee: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee"
+  }
+});
+
+const Cart = mongoose.model("Cart", cartSchema);
 
 /* =========================
    ADMIN LOGIN
@@ -90,7 +89,7 @@ const isAdmin = (req, res, next) => {
 };
 
 /* =========================
-   CLOUDINARY CONFIG ROUTE
+   CLOUDINARY CONFIG
 ========================= */
 
 app.get("/cloudinary-config", isAdmin, (req, res) => {
@@ -116,7 +115,8 @@ app.get("/employees", async (req, res) => {
   try {
     const employees = await Employee.find();
     res.json(employees);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Fetch failed" });
   }
 });
@@ -142,7 +142,8 @@ app.delete("/employees/:id", isAdmin, async (req, res) => {
   try {
     await Employee.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted successfully" });
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Delete failed" });
   }
 });
@@ -155,7 +156,8 @@ app.get("/cart", async (req, res) => {
   try {
     const items = await Cart.find().populate("employee");
     res.json(items);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Cart fetch failed" });
   }
 });
@@ -165,8 +167,10 @@ app.post("/cart/:employeeId", async (req, res) => {
     const item = await Cart.create({
       employee: req.params.employeeId
     });
+
     res.json(item);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Add to cart failed" });
   }
 });
@@ -175,7 +179,8 @@ app.delete("/cart/:id", async (req, res) => {
   try {
     await Cart.findByIdAndDelete(req.params.id);
     res.json({ message: "Removed from cart" });
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Remove failed" });
   }
 });
@@ -184,7 +189,8 @@ app.delete("/cart", async (req, res) => {
   try {
     await Cart.deleteMany({});
     res.json({ message: "Cart cleared" });
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Clear failed" });
   }
 });
@@ -196,5 +202,5 @@ app.delete("/cart", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
