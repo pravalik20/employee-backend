@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
@@ -12,7 +13,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
@@ -23,7 +24,7 @@ app.use((req, res, next) => {
    MONGODB CONNECTION
 ========================= */
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => {
     console.error("MongoDB Error:", err);
@@ -36,7 +37,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 const employeeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  department: { type: String, required: true },   // ✅ ADDED
+  department: { type: String, required: true },
   photo: { type: String, required: true }
 });
 
@@ -104,7 +105,7 @@ app.get("/cloudinary-config", isAdmin, (req, res) => {
 ========================= */
 
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/employee-list.html");
+  res.sendFile(path.join(__dirname, "public", "employee-list.html"));
 });
 
 /* =========================
@@ -194,6 +195,6 @@ app.delete("/cart", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
