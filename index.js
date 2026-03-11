@@ -24,21 +24,37 @@ app.use((req, res, next) => {
    MONGODB CONNECTION
 ========================= */
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => {
-    console.error("MongoDB Error:", err);
-    process.exit(1);
-  });
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 30000
+})
+.then(() => {
+  console.log("✅ MongoDB Connected");
+})
+.catch(err => {
+  console.error("MongoDB Error:", err.message);
+});
+
+mongoose.connection.on("error", err => {
+  console.error("Mongo runtime error:", err);
+});
 
 /* =========================
    MODELS
 ========================= */
 
 const employeeSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  department: { type: String, required: true },
-  photo: { type: String, required: true }
+  name: {
+    type: String,
+    required: true
+  },
+  department: {
+    type: String,
+    required: true
+  },
+  photo: {
+    type: String,
+    required: true
+  }
 });
 
 const Employee = mongoose.model("Employee", employeeSchema);
@@ -60,14 +76,20 @@ app.post("/admin/login", (req, res) => {
   const { key } = req.body;
 
   if (!key) {
-    return res.status(400).json({ message: "Key required" });
+    return res.status(400).json({
+      message: "Key required"
+    });
   }
 
   if (key === process.env.ADMIN_KEY) {
-    return res.json({ success: true });
+    return res.json({
+      success: true
+    });
   }
 
-  return res.status(401).json({ message: "Invalid admin key" });
+  return res.status(401).json({
+    message: "Invalid admin key"
+  });
 });
 
 /* =========================
@@ -78,11 +100,15 @@ const isAdmin = (req, res, next) => {
   const key = req.headers["x-admin-key"];
 
   if (!key) {
-    return res.status(401).json({ message: "Admin key missing" });
+    return res.status(401).json({
+      message: "Admin key missing"
+    });
   }
 
   if (key !== process.env.ADMIN_KEY) {
-    return res.status(403).json({ message: "Admin only" });
+    return res.status(403).json({
+      message: "Admin only"
+    });
   }
 
   next();
@@ -100,7 +126,7 @@ app.get("/cloudinary-config", isAdmin, (req, res) => {
 });
 
 /* =========================
-   DEFAULT PAGE
+   HOME PAGE
 ========================= */
 
 app.get("/", (req, res) => {
@@ -113,11 +139,14 @@ app.get("/", (req, res) => {
 
 app.get("/employees", async (req, res) => {
   try {
-    const employees = await Employee.find();
+    const employees = await Employee.find().sort({ name: 1 });
     res.json(employees);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Fetch failed" });
+    console.error("Employees Fetch Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
@@ -132,19 +161,52 @@ app.post("/employees", isAdmin, async (req, res) => {
     });
 
     res.json(employee);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Create failed" });
+    console.error("Create Employee Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+app.put("/employees/:id", isAdmin, async (req, res) => {
+  try {
+    const { name, department, photo } = req.body;
+
+    const updated = await Employee.findByIdAndUpdate(
+      req.params.id,
+      {
+        name,
+        department,
+        photo
+      },
+      { new: true }
+    );
+
+    res.json(updated);
+
+  } catch (err) {
+    console.error("Update Employee Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
 app.delete("/employees/:id", isAdmin, async (req, res) => {
   try {
     await Employee.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted successfully" });
+
+    res.json({
+      message: "Deleted successfully"
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Delete failed" });
+    console.error("Delete Employee Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
@@ -156,9 +218,12 @@ app.get("/cart", async (req, res) => {
   try {
     const items = await Cart.find().populate("employee");
     res.json(items);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Cart fetch failed" });
+    console.error("Cart Fetch Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
@@ -169,29 +234,44 @@ app.post("/cart/:employeeId", async (req, res) => {
     });
 
     res.json(item);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Add to cart failed" });
+    console.error("Add Cart Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
 app.delete("/cart/:id", async (req, res) => {
   try {
     await Cart.findByIdAndDelete(req.params.id);
-    res.json({ message: "Removed from cart" });
+
+    res.json({
+      message: "Removed from cart"
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Remove failed" });
+    console.error("Delete Cart Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
 app.delete("/cart", async (req, res) => {
   try {
     await Cart.deleteMany({});
-    res.json({ message: "Cart cleared" });
+
+    res.json({
+      message: "Cart cleared"
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Clear failed" });
+    console.error("Clear Cart Error:", err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
@@ -199,7 +279,7 @@ app.delete("/cart", async (req, res) => {
    SERVER START
 ========================= */
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
