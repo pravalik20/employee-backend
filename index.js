@@ -21,24 +21,6 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   MONGODB CONNECTION
-========================= */
-
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 30000
-})
-.then(() => {
-  console.log("✅ MongoDB Connected");
-})
-.catch(err => {
-  console.error("MongoDB Error:", err.message);
-});
-
-mongoose.connection.on("error", err => {
-  console.error("Mongo runtime error:", err);
-});
-
-/* =========================
    MODELS
 ========================= */
 
@@ -141,7 +123,6 @@ app.get("/employees", async (req, res) => {
   try {
     const employees = await Employee.find().sort({ name: 1 });
     res.json(employees);
-
   } catch (err) {
     console.error("Employees Fetch Error:", err);
     res.status(500).json({
@@ -161,7 +142,6 @@ app.post("/employees", isAdmin, async (req, res) => {
     });
 
     res.json(employee);
-
   } catch (err) {
     console.error("Create Employee Error:", err);
     res.status(500).json({
@@ -185,7 +165,6 @@ app.put("/employees/:id", isAdmin, async (req, res) => {
     );
 
     res.json(updated);
-
   } catch (err) {
     console.error("Update Employee Error:", err);
     res.status(500).json({
@@ -201,7 +180,6 @@ app.delete("/employees/:id", isAdmin, async (req, res) => {
     res.json({
       message: "Deleted successfully"
     });
-
   } catch (err) {
     console.error("Delete Employee Error:", err);
     res.status(500).json({
@@ -218,7 +196,6 @@ app.get("/cart", async (req, res) => {
   try {
     const items = await Cart.find().populate("employee");
     res.json(items);
-
   } catch (err) {
     console.error("Cart Fetch Error:", err);
     res.status(500).json({
@@ -234,7 +211,6 @@ app.post("/cart/:employeeId", async (req, res) => {
     });
 
     res.json(item);
-
   } catch (err) {
     console.error("Add Cart Error:", err);
     res.status(500).json({
@@ -250,7 +226,6 @@ app.delete("/cart/:id", async (req, res) => {
     res.json({
       message: "Removed from cart"
     });
-
   } catch (err) {
     console.error("Delete Cart Error:", err);
     res.status(500).json({
@@ -266,7 +241,6 @@ app.delete("/cart", async (req, res) => {
     res.json({
       message: "Cart cleared"
     });
-
   } catch (err) {
     console.error("Clear Cart Error:", err);
     res.status(500).json({
@@ -276,11 +250,26 @@ app.delete("/cart", async (req, res) => {
 });
 
 /* =========================
-   SERVER START
+   START SERVER AFTER DB CONNECTS
 ========================= */
 
-const PORT = process.env.PORT || 10000;
+async function startServer() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 30000
+    });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+    console.log("✅ MongoDB Connected");
+
+    const PORT = process.env.PORT || 10000;
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ Server running on port ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("MongoDB Error:", err.message);
+  }
+}
+
+startServer();
