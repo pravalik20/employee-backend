@@ -36,10 +36,42 @@ const cartSchema = new mongoose.Schema({
   employee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee"
+  },
+  addedBy: {
+    type: String,
+    default: "Unknown"
   }
 });
 
 const Cart = mongoose.model("Cart", cartSchema);
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String
+});
+
+const User = mongoose.model("User", userSchema);
+
+/* =========================
+   USER LOGIN
+========================= */
+
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await User.findOne({ username, password });
+
+  if (!user) {
+    return res.status(401).json({
+      message: "Invalid login"
+    });
+  }
+
+  res.json({
+    success: true,
+    username: user.username
+  });
+});
 
 /* =========================
    ADMIN LOGIN
@@ -93,7 +125,7 @@ app.get("/cloudinary-config", isAdmin, (req, res) => {
 ========================= */
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "employee-list.html"));
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 /* =========================
@@ -160,9 +192,13 @@ app.get("/cart", async (req, res) => {
 
 app.post("/cart/:employeeId", async (req, res) => {
   try {
+    const { addedBy } = req.body;
+
     const item = await Cart.create({
-      employee: req.params.employeeId
+      employee: req.params.employeeId,
+      addedBy
     });
+
     res.json(item);
   } catch (err) {
     console.error("Add Cart Error:", err.message);
@@ -191,6 +227,28 @@ app.delete("/cart", async (req, res) => {
 });
 
 /* =========================
+   CREATE DEFAULT USERS
+========================= */
+
+async function createDefaultUsers() {
+  const users = [
+    { username: "amrutha", password: "1234" },
+    { username: "rakshith", password: "1234" },
+    { username: "prateek", password: "1234" },
+    { username: "pravalik", password: "1234" }
+  ];
+
+  for (const user of users) {
+    const exists = await User.findOne({ username: user.username });
+    if (!exists) {
+      await User.create(user);
+    }
+  }
+
+  console.log("✅ Default users ready");
+}
+
+/* =========================
    START SERVER AFTER DB CONNECTS
 ========================= */
 
@@ -201,6 +259,8 @@ async function startServer() {
     });
 
     console.log("✅ MongoDB Connected");
+
+    await createDefaultUsers();
 
     const PORT = process.env.PORT || 10000;
 

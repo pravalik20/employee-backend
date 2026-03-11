@@ -22,6 +22,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     header h2 {
@@ -34,13 +35,23 @@
       align-items: center;
     }
 
-    header a {
+    header a, header button {
       color: white;
       text-decoration: none;
       position: relative;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
     }
 
     .admin-link {
+      border: 1px solid white;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    .logout-btn {
       border: 1px solid white;
       padding: 8px 14px;
       border-radius: 8px;
@@ -55,6 +66,11 @@
       position: absolute;
       top: -8px;
       right: -12px;
+    }
+
+    .user-box {
+      font-weight: bold;
+      font-size: 15px;
     }
 
     .search-box {
@@ -137,13 +153,15 @@
   <h2>Sahara Employees</h2>
 
   <div class="header-right">
+    <div class="user-box" id="username"></div>
+
     <a href="/cart.html">
       🛒 List <span class="cart-badge" id="cartCount">0</span>
     </a>
 
-    <a href="/admin-login.html" class="admin-link">
-      Admin Login
-    </a>
+    <a href="/admin-login.html" class="admin-link">Admin Login</a>
+
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </header>
 
@@ -160,6 +178,14 @@
 </div>
 
 <script>
+const loggedUser = sessionStorage.getItem("username");
+
+if (!loggedUser) {
+  window.location.href = "/login.html";
+}
+
+document.getElementById("username").innerText = loggedUser;
+
 let allEmployees = [];
 
 /* LOAD EMPLOYEES */
@@ -169,7 +195,6 @@ async function loadEmployees() {
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      console.error("Backend returned error:", data);
       document.getElementById("employees").innerHTML =
         '<div class="empty">No employees available</div>';
       return;
@@ -182,7 +207,6 @@ async function loadEmployees() {
     loadCartCount();
 
   } catch (err) {
-    console.error("Load employees failed:", err);
     document.getElementById("employees").innerHTML =
       '<div class="empty">Server error loading employees</div>';
   }
@@ -222,7 +246,6 @@ function filterEmployees(text) {
     (e.department && e.department.toLowerCase().includes(text.toLowerCase()))
   );
 
-  filtered.sort((a, b) => a.name.localeCompare(b.name));
   render(filtered);
 }
 
@@ -230,14 +253,20 @@ function filterEmployees(text) {
 async function addToCart(employeeId) {
   try {
     await fetch(`/cart/${employeeId}`, {
-      method: "POST"
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        addedBy: loggedUser
+      })
     });
 
     loadCartCount();
-    alert("Added to list");
+    alert(loggedUser + " added to list");
 
   } catch (err) {
-    console.error("Cart error:", err);
+    console.error(err);
   }
 }
 
@@ -252,8 +281,14 @@ async function loadCartCount() {
     }
 
   } catch (err) {
-    console.error("Cart count error:", err);
+    console.error(err);
   }
+}
+
+/* LOGOUT */
+function logout() {
+  sessionStorage.removeItem("username");
+  window.location.href = "/login.html";
 }
 
 /* INIT */

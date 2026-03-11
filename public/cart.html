@@ -17,6 +17,13 @@ header {
   color: white;
   padding: 18px 24px;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.left-header {
+  display: flex;
   align-items: center;
   gap: 15px;
 }
@@ -30,6 +37,20 @@ header a {
 header h2 {
   margin: 0;
   font-size: 24px;
+}
+
+.user-box {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.logout-btn {
+  background: transparent;
+  color: white;
+  border: 1px solid white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .container {
@@ -70,7 +91,12 @@ header h2 {
 .department {
   font-size: 16px;
   color: #555;
-  margin-bottom: 8px;
+}
+
+.addedby {
+  font-size: 15px;
+  color: #2563eb;
+  font-weight: bold;
 }
 
 .remove-btn {
@@ -101,30 +127,21 @@ header h2 {
   margin-top: 60px;
   color: #6b7280;
 }
-
-@media (max-width: 768px) {
-  .item img {
-    width: 130px;
-    height: 170px;
-  }
-
-  .info h3 {
-    font-size: 24px;
-  }
-
-  .remove-btn {
-    font-size: 18px;
-    padding: 16px 26px;
-  }
-}
 </style>
 </head>
 
 <body>
 
 <header>
-  <a href="/employee-list.html">←</a>
-  <h2>🛒 List</h2>
+  <div class="left-header">
+    <a href="/employee-list.html">←</a>
+    <h2>🛒 List</h2>
+  </div>
+
+  <div>
+    <span class="user-box" id="username"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
 </header>
 
 <div class="container">
@@ -133,6 +150,14 @@ header h2 {
 </div>
 
 <script>
+const loggedUser = sessionStorage.getItem("username");
+
+if (!loggedUser) {
+  window.location.href = "/login.html";
+}
+
+document.getElementById("username").innerText = loggedUser;
+
 const cartDiv = document.getElementById("cart");
 
 /* LOAD CART */
@@ -157,9 +182,15 @@ async function loadCart() {
                onerror="this.src='https://via.placeholder.com/120x150?text=No+Image'">
           <div class="info">
             <h3>${item.employee.name}</h3>
+
             <div class="department">
               Department: ${item.employee.department || "Not Assigned"}
             </div>
+
+            <div class="addedby">
+              Added by: ${item.addedBy || "Unknown"}
+            </div>
+
             <button class="remove-btn"
               onclick="removeItem('${item._id}')">
               Remove
@@ -170,37 +201,32 @@ async function loadCart() {
     });
 
   } catch (err) {
-    console.error("Cart load error:", err);
     cartDiv.innerHTML = "<div class='empty'>Failed to load list</div>";
   }
 }
 
 /* REMOVE ITEM */
 async function removeItem(id) {
-  try {
-    await fetch(`/cart/${id}`, {
-      method: "DELETE"
-    });
+  await fetch(`/cart/${id}`, {
+    method: "DELETE"
+  });
 
-    loadCart();
-
-  } catch (err) {
-    console.error(err);
-  }
+  loadCart();
 }
 
 /* CLEAR CART */
 async function clearCart() {
-  try {
-    await fetch("/cart", {
-      method: "DELETE"
-    });
+  await fetch("/cart", {
+    method: "DELETE"
+  });
 
-    loadCart();
+  loadCart();
+}
 
-  } catch (err) {
-    console.error(err);
-  }
+/* LOGOUT */
+function logout() {
+  sessionStorage.removeItem("username");
+  window.location.href = "/login.html";
 }
 
 /* INIT */
