@@ -24,7 +24,9 @@
       align-items: center;
     }
 
-    header h2 { margin: 0; }
+    header h2 {
+      margin: 0;
+    }
 
     .header-right {
       display: flex;
@@ -69,7 +71,9 @@
       font-size: 16px;
     }
 
-    .container { padding: 0 30px 40px; }
+    .container {
+      padding: 0 30px 40px;
+    }
 
     .grid {
       display: grid;
@@ -117,6 +121,13 @@
     .card button:hover {
       background: #1e40af;
     }
+
+    .empty {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 40px;
+      color: #666;
+    }
   </style>
 </head>
 
@@ -124,11 +135,15 @@
 
 <header>
   <h2>Sahara Employees</h2>
+
   <div class="header-right">
     <a href="/cart.html">
       🛒 List <span class="cart-badge" id="cartCount">0</span>
     </a>
-    <a href="/admin-login.html" class="admin-link">Admin Login</a>
+
+    <a href="/admin-login.html" class="admin-link">
+      Admin Login
+    </a>
   </div>
 </header>
 
@@ -149,15 +164,28 @@ let allEmployees = [];
 
 /* LOAD EMPLOYEES */
 async function loadEmployees() {
-  const res = await fetch("/employees");
-  const data = await res.json();
+  try {
+    const res = await fetch("/employees");
+    const data = await res.json();
 
-  // SORT A → Z BY NAME
-  data.sort((a, b) => a.name.localeCompare(b.name));
+    if (!Array.isArray(data)) {
+      console.error("Backend returned error:", data);
+      document.getElementById("employees").innerHTML =
+        '<div class="empty">No employees available</div>';
+      return;
+    }
 
-  allEmployees = data;
-  render(allEmployees);
-  loadCartCount();
+    data.sort((a, b) => a.name.localeCompare(b.name));
+
+    allEmployees = data;
+    render(allEmployees);
+    loadCartCount();
+
+  } catch (err) {
+    console.error("Load employees failed:", err);
+    document.getElementById("employees").innerHTML =
+      '<div class="empty">Server error loading employees</div>';
+  }
 }
 
 /* RENDER */
@@ -165,10 +193,16 @@ function render(list) {
   const container = document.getElementById("employees");
   container.innerHTML = "";
 
+  if (list.length === 0) {
+    container.innerHTML =
+      '<div class="empty">No employees found</div>';
+    return;
+  }
+
   list.forEach(emp => {
     container.innerHTML += `
       <div class="card">
-        <img src="${emp.photo}">
+        <img src="${emp.photo}" onerror="this.src='https://via.placeholder.com/300x260?text=No+Image'">
         <h3>${emp.name}</h3>
         <div class="department">
           Department: ${emp.department || "Not Assigned"}
@@ -181,34 +215,45 @@ function render(list) {
   });
 }
 
-/* SEARCH (Name + Department) */
+/* SEARCH */
 function filterEmployees(text) {
   const filtered = allEmployees.filter(e =>
     e.name.toLowerCase().includes(text.toLowerCase()) ||
     (e.department && e.department.toLowerCase().includes(text.toLowerCase()))
   );
 
-  // KEEP SEARCH RESULTS SORTED
   filtered.sort((a, b) => a.name.localeCompare(b.name));
-
   render(filtered);
 }
 
 /* ADD TO CART */
 async function addToCart(employeeId) {
-  await fetch(`/cart/${employeeId}`, {
-    method: "POST"
-  });
+  try {
+    await fetch(`/cart/${employeeId}`, {
+      method: "POST"
+    });
 
-  loadCartCount();
-  alert("Added to list");
+    loadCartCount();
+    alert("Added to list");
+
+  } catch (err) {
+    console.error("Cart error:", err);
+  }
 }
 
 /* CART COUNT */
 async function loadCartCount() {
-  const res = await fetch("/cart");
-  const items = await res.json();
-  document.getElementById("cartCount").innerText = items.length;
+  try {
+    const res = await fetch("/cart");
+    const items = await res.json();
+
+    if (Array.isArray(items)) {
+      document.getElementById("cartCount").innerText = items.length;
+    }
+
+  } catch (err) {
+    console.error("Cart count error:", err);
+  }
 }
 
 /* INIT */
